@@ -2,62 +2,85 @@ import streamlit as st
 import plotly.graph_objects as go
 import math
 
-# Funções de cálculo baseadas no livro do Martignoni
-
-def calcular_secao_nucleo(potencia_va):
-    return math.sqrt(potencia_va)
-
-def calcular_espiras_por_volt(frequencia, secao_cm2):
-    return 45 / (frequencia * secao_cm2)
-
-def calcular_espiras(espiras_por_volt, tensao):
-    return espiras_por_volt * tensao
-
-def calcular_corrente(potencia_va, tensao):
-    return potencia_va / tensao
-
-# Interface Streamlit
+st.set_page_config(layout="wide")
 st.title("Dimensionamento de Transformador Monofásico (Método Martignoni)")
 
-st.sidebar.header("Dados de Entrada")
-vp = st.sidebar.number_input("Tensão Primária (Vp)", value=120)
-vs = st.sidebar.number_input("Tensão Secundária (Vs)", value=220)
-potencia_va = st.sidebar.number_input("Potência (VA)", value=300)
-frequencia = st.sidebar.number_input("Frequência (Hz)", value=50)
+# Entradas do usuário
+st.sidebar.header("Dados de entrada")
+Vp = st.sidebar.number_input("Tensão Primária (Vp) em V", value=120)
+Vs = st.sidebar.number_input("Tensão Secundária (Vs) em V", value=220)
+S = st.sidebar.number_input("Potência (S) em VA", value=300)
 
-if st.sidebar.button("Calcular"):
-    secao_cm2 = calcular_secao_nucleo(potencia_va)
-    espiras_por_volt = calcular_espiras_por_volt(frequencia, secao_cm2)
-    np = calcular_espiras(espiras_por_volt, vp)
-    ns = calcular_espiras(espiras_por_volt, vs)
-    ip = calcular_corrente(potencia_va, vp)
-    is_ = calcular_corrente(potencia_va, vs)
+frequencia = 50  # Hz
 
-    st.subheader("Resultados do Dimensionamento")
-    st.write(f"Seção do núcleo (cm²): {secao_cm2:.2f}")
-    st.write(f"Número de espiras primário (Np): {np:.0f}")
-    st.write(f"Número de espiras secundário (Ns): {ns:.0f}")
-    st.write(f"Corrente no primário (Ip): {ip:.2f} A")
-    st.write(f"Corrente no secundário (Is): {is_:.2f} A")
+# ======= CÁLCULOS (Método Martignoni) =======
 
-    # Visualização 3D do núcleo
-    st.subheader("Visualização 3D do Núcleo (Aproximada)")
-    core_width = secao_cm2 / 2
-    core_height = secao_cm2
-    core_depth = 3
+# 1. Seção do núcleo (Sc em cm²)
+Sc = 1.152 * math.sqrt(S)  # fórmula Martignoni
+Sc_approx = round(Sc, 2)
 
-    fig = go.Figure(data=[
-        go.Mesh3d(
-            x=[0, core_width, core_width, 0, 0, core_width, core_width, 0],
-            y=[0, 0, core_depth, core_depth, 0, 0, core_depth, core_depth],
-            z=[0, 0, 0, 0, core_height, core_height, core_height, core_height],
-            color='gray',
-            opacity=0.5
-        )
-    ])
-    fig.update_layout(scene=dict(
-        xaxis_title='Largura',
-        yaxis_title='Profundidade',
-        zaxis_title='Altura'
-    ))
-    st.plotly_chart(fig)
+# 2. Número de espiras por volt (Ev)
+Ev = 50 / Sc  # fórmula do livro
+Ev_approx = round(Ev, 2)
+
+# 3. Número de espiras
+Np = round(Ev * Vp)
+Ns = round(Ev * Vs)
+
+# 4. Bitola dos fios (valores típicos simplificados — pode refinar depois)
+bitola_prim = round(0.004 * math.sqrt(S), 2)  # mm²
+bitola_sec = round(0.006 * math.sqrt(S), 2)   # mm²
+
+# ======= MOSTRAR RESULTADOS =======
+st.subheader("Resultados do Dimensionamento:")
+st.markdown(f"- **Seção do núcleo (Sc):** {Sc_approx} cm²")
+st.markdown(f"- **Número de espiras primário (Np):** {Np}")
+st.markdown(f"- **Número de espiras secundário (Ns):** {Ns}")
+st.markdown(f"- **Bitola do fio primário:** {bitola_prim} mm²")
+st.markdown(f"- **Bitola do fio secundário:** {bitola_sec} mm²")
+
+# ======= VISUALIZAÇÃO 3D =======
+st.subheader("Visualização 3D do Núcleo e Bobinas")
+
+# Função para desenhar um cubo (paralelepípedo)
+def cubo(x0, y0, z0, dx, dy, dz, cor):
+    X = [x0, x0+dx, x0+dx, x0, x0, x0+dx, x0+dx, x0]
+    Y = [y0, y0, y0+dy, y0+dy, y0, y0, y0+dy, y0+dy]
+    Z = [z0, z0, z0, z0, z0+dz, z0+dz, z0+dz, z0+dz]
+    faces = [[0,1,2,3],[4,5,6,7],[0,1,5,4],
+             [2,3,7,6],[1,2,6,5],[0,3,7,4]]
+    return go.Mesh3d(x=X, y=Y, z=Z,
+                     i=[f[0] for f in faces],
+                     j=[f[1] for f in faces],
+                     k=[f[2] for f in faces],
+                     color=cor, opacity=1.0)
+
+# Parâmetros físicos do núcleo a partir de Sc
+largura_perna = round(math.sqrt(Sc_approx), 2)  # cm
+altura_nucleo = 10  # valor fixo para visualização
+espessura_nucleo = round(largura_perna * 1.5, 2)  # cm
+
+# Escala para visualização 3D
+escala = 0.5
+lp = largura_perna * escala
+ep = espessura_nucleo * escala
+h = altura_nucleo * escala
+
+# Núcleo (duas pernas verticais + parte superior)
+nucleo1 = cubo(0, 0, 0, lp, ep, h, 'gray')                    # perna esquerda
+nucleo2 = cubo(3*lp, 0, 0, lp, ep, h, 'gray')                 # perna direita
+nucleo_top = cubo(0, 0, h - lp, 4*lp, ep, lp, 'gray')         # topo ligando
+
+# Bobinas
+bobina_p = cubo(0.1, 0.1, lp, lp*0.8, ep*0.8, lp, 'red')      # primário
+bobina_s = cubo(3*lp+0.1, 0.1, lp*2, lp*0.8, ep*0.8, lp, 'blue')  # secundário
+
+# Montar figura
+fig = go.Figure(data=[nucleo1, nucleo2, nucleo_top, bobina_p, bobina_s])
+fig.update_layout(scene=dict(
+    xaxis_title="Largura",
+    yaxis_title="Profundidade",
+    zaxis_title="Altura",
+    aspectratio=dict(x=2, y=1, z=2)
+))
+st.plotly_chart(fig, use_container_width=True)
