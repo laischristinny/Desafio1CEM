@@ -2,7 +2,7 @@
 
 Este projeto em [Streamlit](https://streamlit.io/) permite realizar o **dimensionamento completo de um transformador monofásico**, a partir de parâmetros elétricos básicos. Também fornece uma **visualização 3D interativa do núcleo com as espiras** usando a biblioteca Plotly.
 
-## Tabela AWG utilizada
+## 📑 Tabela AWG utilizada
 - https://en.wikipedia.org/wiki/American_wire_gauge
 
 ## ✨ Funcionalidades
@@ -27,3 +27,14 @@ Este projeto em [Streamlit](https://streamlit.io/) permite realizar o **dimensio
 ```bash
 git clone https://github.com/seu-usuario/nome-do-repo.git
 cd nome-do-repo
+```
+
+### 2. Instale as dependências
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Execute o aplicativo
+```bash
+streamlit run app.py
+```
