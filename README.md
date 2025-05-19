@@ -25,8 +25,8 @@ Este projeto em [Streamlit](https://streamlit.io/) permite realizar o **dimensio
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/nome-do-repo.git
-cd nome-do-repo
+git clone https://github.com/seu-usuario/Desafio1CEM.git
+cd Desafio1CEM
 ```
 
 ### 2. Instale as dependências
